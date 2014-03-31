@@ -79,6 +79,10 @@ public final class Demo {
 			return fold( { this }, { success(f(value)) } );
 		}
 
+        // bind doesn't really make much sense with a semigroup as the error type
+        // but we'll keep it in and just not accumulate errors from multiple validations
+        // We don't guarantee that only a single error results from any failure encountered,
+        // but we do guarantee to stop processing at the first failure.
 		public <B> Validation<E,B> bind(Closure<Validation<E,B>> f) {
 			return fold( { this }, { f(value) } );
 		}
@@ -100,7 +104,7 @@ public final class Demo {
 				return new ApBuilderArityN(validations.append(v));
 			}
 
-			public Validation apply(Closure f) {
+			public Validation applyAll(Closure f) {
 				def result = validations.head().ap( success({ value -> new CurriedForReal(f).call(value) }) );
 				
 				validations.tail().each { validation ->
@@ -109,6 +113,18 @@ public final class Demo {
 				
 				return result;
 			}
+
+            public Validation bindAll(Closure f) {
+                def result = success(new CurriedForReal(f))
+                validations.toList().each { validation ->
+                    result = result.bind { curriedF -> validation.ap(success(curriedF)) }
+                }
+                return result;
+            }
+
+            public static ApBuilderArityN allWithInput(Collection<Closure<Validation>> fs, input) {
+                return fs.collect { f -> f(input) }.inject { a,b -> a.with(b) }
+            }
 		}
 
 		public static class Success<E,A> extends Validation<E,A> {
@@ -193,12 +209,6 @@ println s1.toString() + " getOrElse 'default' gives: " + s1.getOrElse {"default"
 println f1.toString() + " getOrElse 'default' gives: " + f1.getOrElse {"default"}
 println ""
 
-//bind
-//println s1.bind { s -> Demo.Validation.<String,Integer>success(s.length()) }
-//println s1.bind { s -> Demo.Validation.<String,Integer>failure("blah") }
-//println f1.bind { s -> Demo.Validation.<String,Integer>success(s.length()) }
-//println ""
-
 println "map examples"
 println s1.toString() + " map { it.length() } gives: " + (s1.map { it.length() })
 println f1.toString() + " map { it.length() } gives: " + (f1.map { it.length() })
@@ -210,12 +220,27 @@ println s1.toString() + " ap Success({ it.reverse() }) gives: " + s1.ap( rev )
 println f1.toString() + " ap Success({ it.reverse() }) gives: " + f1.ap( rev )
 println ""
 
-println "apply examples"
-//TODO: is there a better name for 'with'? NOT '|@|'
-println s1.toString() + " with " + s2 + " with " + s3 + ", then applying gives: " + s1.with(s2).with(s3).apply { a,b,ans -> a + " " + b + ": " + ans }
-println f1.toString() + " with " + s1 + " with " + f1 + ", then applying gives: " + f1.with(s1).with(f1).apply { a,b,ans -> a + " " + b + ": " + ans }
+println "examples of accumulation of errors"
+println "ap does accumulate: " + f1 + " ap " + f1 + " gives : " + f1.ap(f1)
+println "bind doesn't accumulate, and isn't as useful (for Validation): " + f1 + " bind { it -> " + f1 + " } gives: " + f1.bind({f1})
 println ""
 
-println "examples of accumulation of errors"
-println "bind doesn't accumulate: " + f1 + " bind { it -> " + f1 + " } gives: " + f1.bind({f1})
-println "ap does accumulate: " + f1 + " ap " + f1 + " gives : " + f1.ap(f1)
+println "applicative builder examples"
+//TODO: is there a better name for 'with'? NOT '|@|'
+println s1.toString() + " with " + s2 + " with " + s3 + ", then applying gives: " + s1.with(s2).with(s3).applyAll { a,b,ans -> a + " " + b + ": " + ans }
+println f1.toString() + " with " + s1 + " with " + f1 + ", then applying gives: " + f1.with(s1).with(f1).applyAll { a,b,ans -> a + " " + b + ": " + ans }
+println s1.toString() + " with " + s2 + " with " + s3 + ", then binding gives: " + s1.with(s2).with(s3).bindAll { a,b,ans -> a + " " + b + ": " + ans }
+println f1.toString() + " with " + s1 + " with " + f1 + ", then binding gives: " + f1.with(s1).with(f1).bindAll { a,b,ans -> a + " " + b + ": " + ans }
+println ""
+
+println ""
+
+// further examples - lists of checks
+def check1 = { it -> if(it.length() < 10) Demo.Validation.success(it.length()) else Demo.Validation.failure("too long") }
+def check2 = { it -> if(it.startsWith("hello")) Demo.Validation.success("world") else Demo.Validation.failure("unfriendly") }
+def check3 = { it -> if(it.contains(" ")) Demo.Validation.success(it) else Demo.Validation.failure("I have no words") }
+final def input1 = "hello :)"
+final def input2 = "helloworld!"
+def checks = [check1, check2, check3]
+println Demo.Validation.ApBuilderArityN.allWithInput(checks, input1).applyAll {a,b,c -> b + c.substring(5, a) }
+println Demo.Validation.ApBuilderArityN.allWithInput(checks, input2).applyAll {a,b,c -> b + c.substring(5, a) }
