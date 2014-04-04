@@ -9,8 +9,12 @@ public final class NonEmptyList<T> {
     private final List<T> tail
 
     public NonEmptyList(final T head, final List<T> tail) {
+        if(head == null) { throw new IllegalArgumentException("NonEmptyList cannot have null head") }
+        if(tail.contains(null)) { throw new IllegalArgumentException("NonEmptyList cannot contain null") }
         this.head = head
-        this.tail = tail
+        final def tailCopy = []
+        tailCopy.addAll(tail)
+        this.tail = tailCopy
     }
 
     public NonEmptyList<T> append(final T item) {
