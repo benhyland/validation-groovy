@@ -12,10 +12,15 @@ public final class ApplicativeBuilder<E> {
 
     private final NonEmptyList<Validation<E,?>> validations
 
+    /** Creates a builder, guaranteeing that it contains at least one Validation */
     public ApplicativeBuilder(final NonEmptyList<Validation<E,?>> validations) {
         this.validations = validations
     }
 
+    /**
+     * Gathers this builder's Validations together with the given Validation into a new builder,
+     * which may continue to accumulate further Validations with the same error type E.
+     */
     public ApplicativeBuilder with(final Validation<E,?> next) {
         return new ApplicativeBuilder(validations.append(next))
     }

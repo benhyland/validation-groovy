@@ -85,10 +85,18 @@ public abstract class Validation<E,A> {
         return fold( { this }, { f(value) } )
     }
 
-    // TODO: explain this
-    public ApplicativeBuilder with(final Validation<E,?> next) {
+    /**
+     * Gathers this Validation and the given Validation into a builder, which may continue to accumulate
+     * further Validations with the same error type E.
+     *
+     * The resulting builder may be used to map across the tuple of all results
+     * (if all gathered validations are Validation.Success)
+     * or accumulate all errors
+     * (if it contains at least one Validation.Failure).
+     */
+    public ApplicativeBuilder<E> with(final Validation<E,?> next) {
         final def validations = new NonEmptyList<Validation<E,?>>(this, [])
-        return new ApplicativeBuilder(validations).with(next)
+        return new ApplicativeBuilder<E>(validations).with(next)
     }
 
     /** Factory method for creation of Validation.Success */
