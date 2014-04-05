@@ -108,11 +108,11 @@ public abstract class Validation<E,A> {
     }
 
     /** Factory method for creation of Validation.Failure */
-    public static <E,A> Validation<E,A> failure(E failure, E... moreFailures) {
-        if(failure == null || moreFailures.contains(null)) {
+    public static <E,A> Validation<E,A> failure(E error, E... moreErrors) {
+        if(error == null || moreErrors.contains(null)) {
             throw new IllegalArgumentException("failures must not be null")
         }
-        return new Failure<E,A>(new NonEmptyList<E>(failure, moreFailures.toList()))
+        return new Failure<E,A>(new NonEmptyList<E>(error, moreErrors.toList()))
     }
 
     private static class Success<E,A> extends Validation<E,A> {
