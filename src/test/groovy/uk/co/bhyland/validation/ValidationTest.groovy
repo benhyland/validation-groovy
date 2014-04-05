@@ -3,7 +3,7 @@ package uk.co.bhyland.validation
 import static Validation.success
 import static Validation.failure
 
-public class ValidationTest extends GroovyTestCase {
+public class ValidationTest extends ValidationTestCase {
 
     def ignore_GROOVY_5728_testIllegalValidationSubclassing() {
         shouldFail { new Validation<String,String>() {
@@ -138,13 +138,5 @@ public class ValidationTest extends GroovyTestCase {
         def f = { x -> failure("foo", "bar", "baz") }
         def result = v.flatMap(f)
         isFailureOf(["hello", "world"], result)
-    }
-
-    static def isSuccessOf(expected, validation) {
-        assertEquals(expected, validation.fold({fail()}, {it}))
-    }
-
-    static def isFailureOf(expected, validation) {
-        assertEquals(expected, validation.fold({it.toList()}, {fail()}))
     }
 }

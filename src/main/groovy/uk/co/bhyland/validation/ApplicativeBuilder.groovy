@@ -1,5 +1,8 @@
 package uk.co.bhyland.validation
 
+import static Validation.success
+import static Validation.failure
+
 /**
  * An applicative builder deliberately limited to handling ValidationNELs.
  *
@@ -37,15 +40,22 @@ public final class ApplicativeBuilder<E> {
      */
     public <T> Validation<E,T> applyAll(final Closure<T> f) {
 
-        def result = validations.head().ap( Validation.success({ value -> new CurryingClosure(f).call(value) }) )
+        def result = validations.head().ap( success({ value -> new CurryingClosure(f).call(value) }) )
 
         validations.tail().each { validation ->
-            result = validation.ap( result )
+            result = validation.fold(
+                    { errors -> result.fold(
+                            {accumulatedErrors -> accumulateErrors(accumulatedErrors, errors)},
+                            {validation}
+                    )},
+                    { value -> result.fold(
+                            {result},
+                            {closure -> success(closure.call(value))}
+                    )})
         }
 
         return result
     }
-
 
     /**
      * If all of the gathered Validations are successful, apply their values in order
@@ -61,7 +71,7 @@ public final class ApplicativeBuilder<E> {
      */
     public <T> Validation<E,T> flatMapAll(final Closure<T> f) {
 
-        def result = Validation.success(new CurryingClosure(f))
+        def result = success(new CurryingClosure(f))
 
         validations.toList().each { validation ->
             result = result.flatMap { curryingClosure -> validation.ap(Validation.<E,?>success(curryingClosure)) }
@@ -79,5 +89,12 @@ public final class ApplicativeBuilder<E> {
      */
     public static <E> ApplicativeBuilder<E> allWithInput(final Collection<Closure<Validation<E,?>>> fs, input) {
         return fs.collect { f -> f(input) }.inject { a,b -> a.with(b) }
+    }
+
+    private static <E> Validation<E,?> accumulateErrors(final NonEmptyList<E> accumulatedErrors,
+                                                        final NonEmptyList<E> errors) {
+        def newTail = accumulatedErrors.tail()
+        newTail.addAll(errors.toList())
+        return failure(accumulatedErrors.head(), *newTail)
     }
 }
