@@ -156,9 +156,9 @@ public abstract class Validation<E,A> {
         public <B> Validation<E,B> ap(final Validation<E,Closure<B>> validationOfClosure) {
             return validationOfClosure.fold(
                     { validationOfClosureErrors ->
-                        final def newTail = validationOfClosureErrors.tail()
-                        newTail.addAll(errors.toList())
-                        failure(validationOfClosureErrors.head(), *newTail)
+                        final def newTail = errors.tail()
+                        newTail.addAll(validationOfClosureErrors.toList())
+                        failure(errors.head(), *newTail)
                     },
                     { this }
             )
