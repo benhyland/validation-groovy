@@ -10,7 +10,7 @@ public class NonEmptyListTest extends GroovyTestCase {
 
     void testHeadReturnsOriginalInstance() {
         def hello = new Object()
-        assertEquals(hello, new NonEmptyList<String>(hello, [new Object()]).head())
+        assertEquals(hello, new NonEmptyList<Object>(hello, [new Object()]).head())
     }
 
     void testConstructorTakesShallowCopyOfTail() {
@@ -55,5 +55,23 @@ public class NonEmptyListTest extends GroovyTestCase {
         def newList = nel.prepend("world")
         assertEquals(["hello"], nel.toList())
         assertEquals(["world", "hello"], newList.toList())
+    }
+
+    void testAppendAllCreatesNewList() {
+        def nel1 = new NonEmptyList<String>("foo", ["bar"])
+        def nel2 = new NonEmptyList<String>("baz", ["quux"])
+        def newList = nel1.appendAll(nel2)
+        assertEquals(["foo", "bar"], nel1.toList())
+        assertEquals(["baz", "quux"], nel2.toList())
+        assertEquals(["foo", "bar", "baz", "quux"], newList.toList())
+    }
+
+    void testPrependAllCreatesNewList() {
+        def nel1 = new NonEmptyList<String>("foo", ["bar"])
+        def nel2 = new NonEmptyList<String>("baz", ["quux"])
+        def newList = nel1.prependAll(nel2)
+        assertEquals(["foo", "bar"], nel1.toList())
+        assertEquals(["baz", "quux"], nel2.toList())
+        assertEquals(["baz", "quux", "foo", "bar"], newList.toList())
     }
 }
