@@ -95,8 +95,24 @@ public abstract class Validation<E,A> {
      * (if it contains at least one Validation.Failure).
      */
     public ApplicativeBuilder<E> with(final Validation<E,?> next) {
-        final def validations = new NonEmptyList<Validation<E,?>>(this, [])
-        return new ApplicativeBuilder<E>(validations).with(next)
+        final def validations = new NonEmptyList<Validation<E,?>>(this, [next])
+        return new ApplicativeBuilder<E>(validations)
+    }
+
+
+    /**
+     * As with(), but gathers multiple additional Validations.
+     */
+    public ApplicativeBuilder withAll(final Validation<E,?> next, final Validation<E,?>... more) {
+        return withAllNEL(new NonEmptyList<Validation<E,?>>(next, more.toList()))
+    }
+
+    /**
+     * As with(), but gathers multiple additional Validations as a NonEmptyList.
+     */
+    public ApplicativeBuilder withAllNEL(final NonEmptyList<Validation<E,?>> more) {
+        final def validations = new NonEmptyList<Validation<E,?>>(this, []).appendAll(more)
+        return new ApplicativeBuilder<E>(validations)
     }
 
     /** Factory method for creation of Validation.Success */
@@ -112,8 +128,14 @@ public abstract class Validation<E,A> {
         if(error == null || moreErrors.contains(null)) {
             throw new IllegalArgumentException("failures must not be null")
         }
-        return new Failure<E,A>(new NonEmptyList<E>(error, moreErrors.toList()))
+        return failureFromNEL(new NonEmptyList<E>(error, moreErrors.toList()))
     }
+
+    /** Factory method for creation of Validation.Failure */
+    public static <E,A> Validation<E,A> failureFromNEL(NonEmptyList<E> errors) {
+        return new Failure<E,A>(errors)
+    }
+
 
     private static class Success<E,A> extends Validation<E,A> {
 
@@ -132,7 +154,7 @@ public abstract class Validation<E,A> {
         @Override
         public <B> Validation<E,B> ap(final Validation<E,Closure<B>> validationOfClosure) {
             return validationOfClosure.fold(
-                    { validationOfClosure },
+                    { errors -> failureFromNEL(errors) },
                     { closure -> success(closure(value)) }
             )
         }
