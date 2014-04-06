@@ -45,6 +45,13 @@ public class ApplicativeBuilderTest extends ValidationTestCase {
                 f1.with(s2).with(f2).with(s3).with(f3).flatMapAll( {a,b,c,d,e,f -> "OK!"} ))
     }
 
+    void testOnSuccessMappingWithSingleParameter() {
+        def s1 = success("a")
+        def s2 = success("b")
+        def s3 = success("c")
+        isSuccessOf("abc", s1.with(s2).with(s3).applyAllAsList( {abc -> abc.join()} ))
+    }
+
     void testSupplyingInputToListOfValidationFunctions() {
         def check1 = { it -> if(it.length() < 10) success(it.length()) else failure("too long") }
         def check2 = { it -> if(it.startsWith("hello")) success("world") else failure("too unfriendly") }

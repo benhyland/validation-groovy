@@ -57,6 +57,24 @@ public final class ApplicativeBuilder<E> {
         return result
     }
 
+    public <T> Validation<E,T> applyAllAsList(final Closure<T> f) {
+
+        def args = validations.head().ap( success({ value -> [] << value }) )
+
+        validations.tail().each { validation ->
+            args = validation.fold(
+                    { errors -> args.fold(
+                            {accumulatedErrors -> accumulateErrors(accumulatedErrors, errors)},
+                            {validation}
+                    )},
+                    { value -> args.fold(
+                            {args},
+                            {accumulatedArgs -> success(accumulatedArgs << value)}
+                    )})
+        }
+        return args.ap(success(f))
+    }
+
     /**
      * If all of the gathered Validations are successful, apply their values in order
      * as parameters to the given Closure and return the result in a Validation.Success.
