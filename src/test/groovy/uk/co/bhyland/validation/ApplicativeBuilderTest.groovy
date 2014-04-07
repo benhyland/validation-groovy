@@ -25,6 +25,13 @@ public class ApplicativeBuilderTest extends ValidationTestCase {
                     f1.with(s2).with(f2).with(s3).with(f3).applyAll( {a,b,c,d,e,f -> "OK!"} ))
     }
 
+    void testApplyAllWithAClosureTakingASingleParameter() {
+        def s1 = success("a")
+        def s2 = success("b")
+        def s3 = success("c")
+        isSuccessOf("abc", s1.with(s2).with(s3).applyAll( {abc -> abc.join()} ))
+    }
+
     void testFlatMapAllOnValidationsThatAreAllSuccesses() {
         def s1 = success("a")
         def s2 = success("b")
@@ -45,11 +52,51 @@ public class ApplicativeBuilderTest extends ValidationTestCase {
                 f1.with(s2).with(f2).with(s3).with(f3).flatMapAll( {a,b,c,d,e,f -> "OK!"} ))
     }
 
-    void testOnSuccessMappingWithSingleParameter() {
+    void testFlatMapAllWithAClosureTakingASingleParameter() {
         def s1 = success("a")
         def s2 = success("b")
         def s3 = success("c")
-        isSuccessOf("abc", s1.with(s2).with(s3).applyAllAsList( {abc -> abc.join()} ))
+        isSuccessOf("abc", s1.with(s2).with(s3).flatMapAll( {abc -> abc.join()} ))
+    }
+
+    void testSequenceApplicativeOnValidationsThatAreAllSuccesses() {
+        def s1 = success("a")
+        def s2 = success("b")
+        def s3 = success("c")
+        isSuccessOf(["a", "b", "c"], s1.with(s2).with(s3).sequenceApplicative().map { it.toList() })
+    }
+
+    void testSequenceApplicativeOnValidationsThatAreAMixOfSuccessesAndFailures() {
+        def s1 = success("a")
+        def f1 = failure("foo", "bar")
+        def s2 = success("b")
+        def f2 = failure("baz", "quux")
+        def s3 = success("c")
+        def f3 = failure("wibble", "↑↑↓↓←→←→ba")
+        isFailureOf(["foo", "bar", "baz", "quux", "wibble", "↑↑↓↓←→←→ba"],
+                s1.with(f1).with(s2).with(f2).with(s3).with(f3).sequenceApplicative())
+        isFailureOf(["foo", "bar", "baz", "quux", "wibble", "↑↑↓↓←→←→ba"],
+                f1.with(s2).with(f2).with(s3).with(f3).sequenceApplicative())
+    }
+
+    void testSequenceOnValidationsThatAreAllSuccesses() {
+        def s1 = success("a")
+        def s2 = success("b")
+        def s3 = success("c")
+        isSuccessOf(["a", "b", "c"], s1.with(s2).with(s3).sequence().map { it.toList() })
+    }
+
+    void testSequenceOnValidationsThatAreAMixOfSuccessesAndFailures() {
+        def s1 = success("a")
+        def f1 = failure("foo", "bar")
+        def s2 = success("b")
+        def f2 = failure("baz", "quux")
+        def s3 = success("c")
+        def f3 = failure("wibble", "↑↑↓↓←→←→ba")
+        isFailureOf(["foo", "bar"],
+                s1.with(f1).with(s2).with(f2).with(s3).with(f3).sequence())
+        isFailureOf(["foo", "bar"],
+                f1.with(s2).with(f2).with(s3).with(f3).sequence())
     }
 
     void testSupplyingInputToListOfValidationFunctions() {
@@ -65,5 +112,23 @@ public class ApplicativeBuilderTest extends ValidationTestCase {
 
         isSuccessOf("9, world, hello foo", ApplicativeBuilder.allWithInput(checks, input1).applyAll(onSuccess))
         isFailureOf(["too long", "too few words"], ApplicativeBuilder.allWithInput(checks, input2).applyAll(onSuccess))
+    }
+
+    void testWithAll() {
+        def s1 = success("a")
+        def s2 = success("b")
+        def s3 = success("c")
+        def s4 = success("d")
+        isSuccessOf("abcd", s1.with(s2).withAll(s3, s4).applyAll( {abc -> abc.join()} ))
+        isSuccessOf("abcd", s1.withAll(s2, s3, s4).applyAll( {abc -> abc.join()} ))
+    }
+
+    void testWithAllNEL() {
+        def s1 = success("a")
+        def s2 = success("b")
+        def s3 = success("c")
+        def s4 = success("d")
+        isSuccessOf("abcd", s1.with(s2).withAllNEL(new NonEmptyList(s3, [s4])).applyAll( {abc -> abc.join()} ))
+        isSuccessOf("abcd", s1.withAllNEL(new NonEmptyList(s2, [s3, s4])).applyAll( {abc -> abc.join()} ))
     }
 }
