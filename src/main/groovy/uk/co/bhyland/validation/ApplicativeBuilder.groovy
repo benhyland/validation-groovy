@@ -141,20 +141,18 @@ public final class ApplicativeBuilder<E> {
     }
 
     private static <T> Validation<E,T> applyClosureToArgs(Closure<T> f, Validation<E,?> argsValidation) {
-        return argsValidation.fold(
-                {argsValidation},
-                {args ->
-                    def argList = args.toList()
-                    if(argList.size() == f.getMaximumNumberOfParameters()) {
-                        success(f.call(*argList))
-                    }
-                    else if(f.getMaximumNumberOfParameters() == 1) {
-                        success(f.call(argList))
-                    }
-                    else {
-                        throw new IllegalArgumentException("A closure taking ${f.getMaximumNumberOfParameters()} parameters cannot be applied to ${argList.size()} arguments")
-                    }
-                }
-        )
+        return argsValidation.map { args ->
+            def argList = args.toList()
+
+            if(argList.size() == f.getMaximumNumberOfParameters()) {
+                f.call(*argList)
+            }
+            else if(f.getMaximumNumberOfParameters() == 1) {
+                f.call(argList)
+            }
+            else {
+                throw new IllegalArgumentException("A closure taking ${f.getMaximumNumberOfParameters()} parameters cannot be applied to ${argList.size()} arguments")
+            }
+        }
     }
 }
