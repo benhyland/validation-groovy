@@ -1,8 +1,5 @@
 package uk.co.bhyland.validation
 
-import static Validation.success
-import static Validation.failureFromNEL
-
 /**
  * An applicative builder deliberately limited to handling ValidationNELs.
  *
@@ -105,18 +102,12 @@ public final class ApplicativeBuilder<E> {
      */
     public Validation<E,NonEmptyList> sequenceApplicative() {
 
-        Validation<E,NonEmptyList> args = validations.head().map { value -> new NonEmptyList(value, []) }
+        def args = validations.head().map { value -> new NonEmptyList(value, []) }
 
         validations.tail().each { validation ->
-            args = validation.fold(
-                    { errors -> args.fold(
-                            {accumulatedErrors -> failureFromNEL(accumulatedErrors.appendAll(errors))},
-                            {validation}
-                    )},
-                    { value -> args.fold(
-                            {args},
-                            {accumulatedArgs -> success(accumulatedArgs.append(value))}
-                    )})
+            args = args.ap( validation.map { value -> {
+                accumulatedArgs -> accumulatedArgs.append(value) }
+            })
         }
 
         return args
