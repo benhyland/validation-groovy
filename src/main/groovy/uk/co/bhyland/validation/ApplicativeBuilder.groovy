@@ -87,12 +87,15 @@ public final class ApplicativeBuilder<E> {
     /**
      * Convenience for handling a collection of validation checks which all take the same input value.
      * Applies the input to each check, and gathers the resulting Validations in order into a ApplicativeBuilder.
-     *
-     * Note that this relies on duck typing to identify the with() method,
-     * which may be on Validation or on ApplicativeBuilder. Cool or horrific? You decide!
+     * Throws IllegalArgumentException if the given collection is empty.
      */
     public static <E> ApplicativeBuilder<E> allWithInput(final Collection<Closure<Validation<E,?>>> fs, input) {
-        return fs.collect { f -> f(input) }.inject { a,b -> a.with(b) }
+        if(fs.isEmpty()) { throw new IllegalArgumentException("must supply at least one validation function") }
+        def withInput = fs.collect { f -> f(input) }
+
+        def head = withInput[0]
+        def tail = fs.size() == 1 ? [] : withInput[1..-1]
+        return new ApplicativeBuilder<E>(new NonEmptyList<Validation<E,?>>(head, tail))
     }
 
     /**

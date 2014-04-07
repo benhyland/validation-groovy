@@ -110,6 +110,8 @@ public class ApplicativeBuilderTest extends ValidationTestCase {
         def input2 = "hellooooooooooooo!"
         def onSuccess = { a,b,c -> "$a, $b, $c" }
 
+        shouldFail { ApplicativeBuilder.allWithInput([], input1) }
+        isSuccessOf(9, ApplicativeBuilder.allWithInput([check1], input1).applyAll({it}))
         isSuccessOf("9, world, hello foo", ApplicativeBuilder.allWithInput(checks, input1).applyAll(onSuccess))
         isFailureOf(["too long", "too few words"], ApplicativeBuilder.allWithInput(checks, input2).applyAll(onSuccess))
     }
