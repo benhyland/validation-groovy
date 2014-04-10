@@ -51,7 +51,7 @@ public abstract class Validation<E,A> {
 
     /** Convenience for handling default values. */
     public A getOrElse(final Closure<A> other) {
-        return fold( other, { value } )
+        return fold( other, { it } )
     }
 
     /**
@@ -64,7 +64,7 @@ public abstract class Validation<E,A> {
      * aka collect.
      */
     public <B> Validation<E,B> map(final Closure<B> f) {
-        return fold( { this }, { success(f(value)) } )
+        return fold( { this }, { success(f(it)) } )
     }
 
     /**
@@ -82,7 +82,7 @@ public abstract class Validation<E,A> {
      * guarantee to stop processing at the first failure.
      */
     public <B> Validation<E,B> flatMap(final Closure<Validation<E,B>> f) {
-        return fold( { this }, { f(value) } )
+        return fold( { this }, { f(it) } )
     }
 
     /**
